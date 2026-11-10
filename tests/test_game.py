@@ -30,6 +30,28 @@ class TestNewGame(unittest.TestCase):
         self.assertFalse(player["game_over"])
         self.assertFalse(player["won"])
 
+    def test_new_game_resets_player_state(self):
+        first_player = new_game("Ada")
+        first_player["location"] = "Lighthouse"
+        first_player["energy"] = 0
+        first_player["inventory"].append("rope")
+
+        second_player = new_game("John")
+
+        self.assertEqual(second_player["location"], "Beach")
+        self.assertEqual(second_player["energy"], 5)
+        self.assertEqual(second_player["inventory"], [])
+        self.assertFalse(second_player["game_over"])
+        self.assertFalse(second_player["won"])
+
+    def test_players_have_separate_inventories(self):
+        first_player = new_game("Ada")
+        second_player = new_game("John")
+
+        first_player["inventory"].append("rope")
+
+        self.assertEqual(second_player["inventory"], [])
+
 
 class TestMovement(unittest.TestCase):
 
@@ -58,6 +80,25 @@ class TestMovement(unittest.TestCase):
         self.assertEqual(player["location"], "Cave")
         self.assertEqual(player["energy"], 5)
 
+    def test_bridge_can_be_crossed_with_rope(self):
+        player = new_game("Ada")
+        player["location"] = "Cave"
+        player["inventory"].append("rope")
+
+        move_player(player, "Old Bridge")
+
+        self.assertEqual(player["location"], "Old Bridge")
+        self.assertEqual(player["energy"], 4)
+
+    def test_movement_is_blocked_after_game_ends(self):
+        player = new_game("Ada")
+        player["game_over"] = True
+
+        move_player(player, "Jungle")
+
+        self.assertEqual(player["location"], "Beach")
+        self.assertEqual(player["energy"], 5)
+
 
 class TestInventory(unittest.TestCase):
 
@@ -78,6 +119,15 @@ class TestInventory(unittest.TestCase):
 
         self.assertEqual(player["inventory"].count("rope"), 1)
 
+    def test_lantern_cannot_be_collected_twice(self):
+        player = new_game("Ada")
+        player["location"] = "Cave"
+
+        collect_item(player)
+        collect_item(player)
+
+        self.assertEqual(player["inventory"].count("lantern"), 1)
+
     def test_empty_inventory_message(self):
         player = new_game("Ada")
 
@@ -93,6 +143,16 @@ class TestBeacon(unittest.TestCase):
         light_beacon(player)
 
         self.assertFalse(player["won"])
+
+    def test_beacon_requires_lighthouse_location(self):
+        player = new_game("Ada")
+        player["location"] = "Cave"
+        player["inventory"].append("lantern")
+
+        light_beacon(player)
+
+        self.assertFalse(player["won"])
+        self.assertFalse(player["game_over"])
 
     def test_player_wins_with_lantern_at_lighthouse(self):
         player = new_game("Ada")
